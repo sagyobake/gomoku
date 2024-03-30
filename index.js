@@ -1,4 +1,6 @@
 let all_username = {};
+let database = {};
+let count = 0;
 
 const server = Bun.serve({
   //port: 443,
@@ -46,17 +48,16 @@ const server = Bun.serve({
       ws.send(JSON.stringify(all_username));
     },
     message(ws, message) {
+      const json_data = JSON.parse(message);
+      const username = String(Object.keys(json_data));
       if (Object.keys(all_username).length < 2) {
-        const json_data = JSON.parse(message);
-        const username = String(Object.keys(json_data));
-
         if (username.length <= 8) {
           console.log(Object.keys(all_username).length);
           if (typeof all_username[username] === 'undefined') {
             all_username[username] = new Date();
             server.publish('room', JSON.stringify(all_username));
             const data = {};
-            data['has-been-decided'] = username;
+            data['has-been-decided'] = [username];
             ws.send(JSON.stringify(data));
           } else {
             const data = {};
@@ -69,6 +70,15 @@ const server = Bun.serve({
           ws.send(JSON.stringify(too_long));
         }
 
+      } else if (username === 'send-coordinate') {
+        count++;
+        const values = Object.values(json_data);
+        const userid = values[0][0];
+        const coordinate = values[0][1];
+        console.log(userid);
+        console.log(coordinate);
+        database['reflect-the-coordinates'] = [count, coordinate];
+        server.publish('room', JSON.stringify(database));
       } else {
         console.log('too many players');
         const data = {}
